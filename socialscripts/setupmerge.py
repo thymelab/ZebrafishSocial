@@ -31,7 +31,7 @@ other = args.other
 
 
 def make_fastqc_file(fd,worc,dirlist):
-	ffile = open('mergesubmission_'+ worc +"_" + fd + '.slurm', 'w')
+	ffile = open('newmergesubmission_'+ worc +"_" + fd + '.slurm', 'w')
 	ffile.write("#!/bin/bash\n")
 	ffile.write("#SBATCH -p express # Partition to submit to\n")
 	ffile.write("#SBATCH -n 1 # Number of cores requested\n")
@@ -41,11 +41,11 @@ def make_fastqc_file(fd,worc,dirlist):
 	ffile.write("#SBATCH -o " + statsfile + "_" + worc + "_" + fd + "_%A_%a.out # Standard out goes to this file\n")
 	ffile.write("#SBATCH -e hostname_%A_%a.err # Standard err goes to this filehostname\n")
 	ffile.write("module load " + module + "\n")
-	ffile.write("cd outputmerge_" + worc + "_" + fd + '\n')
-	if os.path.exists("outputmerge_" + worc + "_" + fd):
+	ffile.write("cd outputnewmerge_" + worc + "_" + fd + '\n')
+	if os.path.exists("outputnewmerge_" + worc + "_" + fd):
 		print("Output directories already generated.")
 	else:
-		os.mkdir("outputmerge_" + worc+ "_"+ fd)
+		os.mkdir("outputnewmerge_" + worc+ "_"+ fd)
 	ffile.write("python " + scriptpath + "processmotiondata.py -t ")
 	ffile.write("\"" + prefix + ".timestamp1.Fri, Apr 8, 2022")
 	ffile.write("\" -e \"" + efile + "\" -c \"" + prefix + ".centroid1.Fri, Apr 8, 2022")
@@ -57,14 +57,14 @@ def make_fastqc_file(fd,worc,dirlist):
 	ffile.write(" -n 20 -r \"../rois_string\" -graphmulti \"" + dirlist + "\"")
 	if other != "":
 		ffile.write(" -" + other)
-	return 'mergesubmission_'+ worc +"_" + fd +'.slurm'
+	return 'newmergesubmission_'+ worc +"_" + fd +'.slurm'
 
 current_directory = os.getcwd()
 geno_dirs = [os.path.basename(d)
 	for root, dirs, files in os.walk(current_directory)
 	for d in dirs]
 geno_dirs = list(set(geno_dirs))
-geno_dirs = [item for item in geno_dirs if item.startswith("outputfull")]
+geno_dirs = [item for item in geno_dirs if item.startswith("outputnew")]
 print(geno_dirs)
 
 plate_dirs = [d for d in os.listdir(current_directory)
@@ -95,7 +95,7 @@ for geno in geno_dirs:
 sfile = open("jobsubmission.sh", 'w')
 sfile.write("#!/bin/bash\n")
 all_files = os.listdir(current_directory)
-filtered_files = [file for file in all_files if file.startswith("mergesubmission_") and file.endswith("slurm")]
+filtered_files = [file for file in all_files if file.startswith("newmergesubmission_") and file.endswith("slurm")]
 for filename in filtered_files:
 	sfile.write("sbatch ")
 	sfile.write(filename)

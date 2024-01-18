@@ -60,7 +60,10 @@ def savedataandplot(eventsectionlist, fish_list):
 					if (bd == (BD.name, BD.time_bin)):
 						if((len(BD.time_bin) > 1) and BD.slow_speed): # activity (sleep) plots
 							splitfishlist[f.genogroup + "-" + f.realgenotype].append(BD.binned_data[es.indexdict[BD.time_bin[1]][0]:es.indexdict[BD.time_bin[1]][1]])
-							bdname = BD.name + "_" + str(BD.time_bin[0]) + "over" + str(BD.time_bin[1])
+							if fileloading.social:
+								bdname = BD.name + "_" + str(BD.time_bin[1])
+							else:
+								bdname = BD.name + "_" + str(BD.time_bin[0]) + "over" + str(BD.time_bin[1])
 						elif((len(BD.time_bin) == 1) and BD.slow_speed): # bout graphs
 							splitfishlist[f.genogroup + "-" + f.realgenotype].append(BD.binned_data[es.indexdict[BD.time_bin[0]][0]:es.indexdict[BD.time_bin[0]][1]])
 							bdname = BD.name + "_" + str(BD.time_bin[0])

@@ -627,13 +627,16 @@ def CalculateEventProperties(name, eventsection, hs_dict, hs_distances, threshol
 def determine_indices(timestamp_data_array, timeinterval, timestart, timeend, timestamp_data_dict, dropped_seconds):
 	indexstart = 0
 	indexend = 0
-	tdelta = timeend - timestart
+	tdelta = timeend - timestart # The total possible experiment time
 	intervalnumber = int(tdelta.total_seconds()) / timeinterval # How many different chunks of time to break it into (ie, 10 minutes in active minutes per 10 minutes)
 	indexstart = timestamp_data_dict[timestart] # The index value for the first occurrence of the start time, so this is the inclusive value
+#	print(indexstart)
 	indexend = len(timestamp_data_array) # The index value for the last occurrence of the end time, so this is the inclusive value
+#	print(indexend)
 	intervalindices = []
 	intervalindices.append(indexstart)
 	timetest = timestart
+#	print(timetest)
 	timestamp_data_dict_keys = timestamp_data_dict.keys()
 	if timeinterval >= 1:
 		for z2 in range(0,int(intervalnumber)):
@@ -641,6 +644,7 @@ def determine_indices(timestamp_data_array, timeinterval, timestart, timeend, ti
 			timetest1 = timetest + datetime.timedelta(seconds=(timeinterval * z2))
 			if timetest1 not in dropped_seconds:
 				indext = timestamp_data_dict[timetest1]
+				#print("INDEXT",indext)
 				intervalindices.append(indext-1)
 				intervalindices.append(indext)
 	else: # If we are going to be doing every frame instead of by a set time, can't go less than second intervals using the time approach
@@ -681,6 +685,51 @@ def sleep(data_array, threshold, sleepbouts, intervalindices1, intervalindices36
 		binnedlist.append(ProcessedData(k2,v2, ("1","3600")))
 	return binnedlist
 
+
+def socialactivity(x_array, rois, intervalnumindices, intervalindices, timebintup, prefix = ""):
+	activitydict = {
+			prefix + "socialpreferenceframes": []
+			}
+	binnedlist = []
+	qpt = rois[2]*0.75 # maxx
+	cqpt = rois[2]*0.25
+	for m in range(0,len(intervalindices)-1,2):
+		#sframes = 0
+		#asframes = 0
+		socialpreferenceindex = 0
+		printdata = []
+		startindex = np.searchsorted(intervalnumindices, intervalindices[m])
+		endindex = np.searchsorted(intervalnumindices, intervalindices[m+1]) + 1 # Add one because range below is non-inclusive
+		shortarray = intervalnumindices[startindex:endindex]
+		#print("INDEXCHECK ",startindex, endindex)
+		#print("INDEXCHECK ",shortarray)
+		sframes = 0
+		asframes = 0
+		tframes = 0
+		socialpreference = 0
+		for m3 in range(0, len(shortarray)-1,2):
+			#print("TESTY",m3)
+			#sframes = 0
+			#asframes = 0
+			#tframes = 0
+			#socialpreference = 0
+			for m4 in range(shortarray[m3], shortarray[m3+1]+1):
+				#print("TESTZ",m4)
+				#print("TESTX",x_array[m4])
+				tframes = tframes + 1
+				if x_array[m4] > qpt:
+					sframes = sframes + 1
+				if x_array[m4] < cqpt:
+					asframes = asframes + 1
+		socialpreference = (sframes - asframes) / tframes
+		#print("soc: ", socialpreference)
+			#if socialpreference > 0:
+			#	socialpreferenceindex = socialpreferenceindex + 1
+		#print(sframes, asframes, tframes)
+		activitydict[prefix + "socialpreferenceframes"].append(socialpreference)
+	for k2,v2 in activitydict.items():
+		binnedlist.append(ProcessedData(k2,v2, timebintup))
+	return binnedlist
 
 def flexactivity(data_array, threshold, intervalnumindices, intervalindices, timebintup, prefix = ""):
 	activitydict = {
@@ -775,6 +824,7 @@ def process_all_data():
 	allbinsset = set(allbins)
 	indexdict = {}
 	for t in allbinsset:
+		#print("t ", t)
 		binindices = determine_indices(timestamp_data_array, int(t), timestart, timeend, timestamp_data_dict, dropped_seconds)
 		indexdict[str(t)] = binindices
 		# Adding the start and end indices for all possible binning for every eventsection, even if you don't need every single one (the numerator bins aren't used)
@@ -785,6 +835,15 @@ def process_all_data():
 	for fish in fish_list:
 		print("FISH: ", fish.idnumber)
 		print(fish.rois)
+		if(fileloading.social):
+			fish_distances = calculate_distance(fish)
+			for r in range(0, len(fileloading.activitytimes)-1, 2):
+				#print(str(fileloading.activitytimes[r]))
+				#print(str(fileloading.activitytimes[r+1]))
+				tup_time = (str(fileloading.activitytimes[r]),str(fileloading.activitytimes[r+1]))
+				fish.add_binned_data(flexactivity(fish_distances, fileloading.activitytimesthresholds[0], indexdict[str(fileloading.activitytimes[r])],indexdict[str(fileloading.activitytimes[r+1])], tup_time))
+				fish.add_binned_data(socialactivity(fish.x_array, fish.rois, indexdict[str(fileloading.activitytimes[r])],indexdict[str(fileloading.activitytimes[r+1])], tup_time))
+		continue # if we are doing social, we are going to skip bout stuff, since it really doesn't work well (even though we have a function still, deciding it wasn't ideal). The challenge is in bout definitions for 21 dpf partly.
 		# Calculating the distances moved between each frame for both slow-speed data and high-speed movies
 		fish_distances = calculate_distance(fish)
 		hs_fish_distances = hs_calculate_distance(fish)

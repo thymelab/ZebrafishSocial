@@ -87,6 +87,8 @@ def hm_plot(intensity, type, ids, xaxis, yaxis, catarray):
 	cax = divider.append_axes('bottom', size='10%', pad=0.6)
 	plt.colorbar(im, cax=cax, orientation='horizontal')
 	cax.set_xlabel(yaxis)
+	idstr = '-'.join(ids)
+	np.savetxt(heatgraphname + ".data", np.array(intensity,dtype=np.float64), delimiter = ',', header=idstr)
 	plt.savefig(heatgraphname, transparent=True, format ="png")
 	plt.close()
 
@@ -379,13 +381,14 @@ def main(graphparametersfile, baselinelight, obendfilters, cbendfilters,graphmul
 				#fx1shape = (fx1shape[0],1)
 			#print("YYY",fx1shape)
 			#print("YYYY",fx1shape[1])
+			# This code trims the ends off of the arrays, assuming they end later and start similarly
 			if(np.shape(arraylist[0])[1] > fx1shape[1]):
-				arraylist[0] = np.resize(arraylist[0],(np.shape(arraylist[0])[0],fx1shape[1]))
+				arraylist[0] = arraylist[0][:, :fx1shape[1]]
 				#print("TEST3x",np.shape(arraylist[0]))
 				arraylist[0] = np.concatenate((arraylist[0],fx1array), axis=0)
 				#print("TEST3xx",np.shape(arraylist[0]))
 			elif(np.shape(arraylist[0])[1] < fx1shape[1]):
-				shorter = np.resize(fx1array,(fx1shape[0],np.shape(arraylist[0])[1]))
+				shorter = fx1array[:, :np.shape(arraylist[0])[1]]
 				#print("TEST2z",np.shape(shorter))
 				#print("TEST3z",np.shape(arraylist[0]))
 				arraylist[0] = np.concatenate((arraylist[0],shorter), axis=0)
@@ -406,14 +409,16 @@ def main(graphparametersfile, baselinelight, obendfilters, cbendfilters,graphmul
 					fx2array = fx2array.reshape(fx2shape[0],1)
 					fx2shape = np.shape(fx2array)
 				if(np.shape(arraylist[1])[1] > fx2shape[1]):
-					arraylist[1] = np.resize(arraylist[1],(np.shape(arraylist[1])[0], fx2shape[1]))
+					#arraylist[1] = np.resize(arraylist[1],(np.shape(arraylist[1])[0], fx2shape[1]))
+					arraylist[1] = arraylist[1][:, :fx2shape[1]]
 					#print("TEST3xb",np.shape(arraylist[1]))
 					#print("TEST3xbc",fx2shape)
 					arraylist[1] = np.concatenate((arraylist[1],fx2array), axis=0)
 					#print("TEST3xbb",np.shape(arraylist[1]))
 				elif(np.shape(arraylist[1])[1] < fx2shape[1]):
 					#print("TEST2a",np.shape(fx2array))
-					shorter2 = np.resize(fx2array,(fx2shape[0],np.shape(arraylist[1])[1]))
+					#shorter2 = np.resize(fx2array,(fx2shape[0],np.shape(arraylist[1])[1]))
+					shorter2 = fx2array[:, :np.shape(arraylist[1])[1]]
 					#fx2array = np.resize(fx2array,(np.shape(fx2array[1])[0], np.shape(arraylist[1])[1]))
 					#shorter = np.resize(fx2array,np.shape(arraylist[1]))
 					#print("TEST2b",np.shape(shorter2))

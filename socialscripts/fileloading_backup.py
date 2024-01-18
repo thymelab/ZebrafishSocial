@@ -10,7 +10,6 @@ import os.path
 from os import path
 from Fish import Fish # fish object
 from EventSection import EventSection # event section object
-import matplotlib.pyplot as plt
 
 # This dictionary is only used if -oldtracking is on, for old datasets before ROIs were saved by LabVIEW. Irrelevant for new users.
 well_conversion = {0:0,8:1,16:2,24:3,32:4,40:5,48:6,56:7,64:8,72:9,80:10,88:11,1:12,9:13,17:14,25:15,33:16,41:17,49:18,57:19,65:20,73:21,81:22,89:23,2:24,10:25,18:26,26:27,34:28,42:29,50:30,58:31,66:32,74:33,82:34,90:35,3:36,11:37,19:38,27:39,35:40,43:41,51:42,59:43,67:44,75:45,83:46,91:47,4:48,12:49,20:50,28:51,36:52,44:53,52:54,60:55,68:56,76:57,84:58,92:59,5:60,13:61,21:62,29:63,37:64,45:65,53:66,61:67,69:68,77:69,85:70,93:71,6:72,14:73,22:74,30:75,38:76,46:77,54:78,62:79,70:80,78:81,86:82,94:83,7:84,15:85,23:86,31:87,39:88,47:89,55:90,63:91,71:92,79:93,87:94,95:95}
@@ -21,7 +20,6 @@ parser.add_argument('-outputmovies', action="store_true", dest="outputmovies", d
 parser.add_argument('-r', type=str, action="store", dest="roisfile")
 parser.add_argument('-oldtracking', action="store_true", dest="oldtracking", default=False) # Tracked data from before code was updated to have output ROIs, irrelevant for new users, only compatible with 96-well plates
 parser.add_argument('-graphonly', action="store_true", dest="graphonly", default=False)
-parser.add_argument('-xyhm', action="store_true", dest="xyhm", default=False)
 parser.add_argument('-social', action="store_true", dest="social", default=False)
 parser.add_argument('-graphmulti', type=str, action="store", dest="dirlist") # CURRENTLY NOT COMPATIBLE WITH STIMULI THAT NEED FILTERING
 parser.add_argument('-j', type=str, action="store", dest="graphparameters", default="PlotParameters")
@@ -57,7 +55,6 @@ roisfile = args.roisfile
 oldtracking = args.oldtracking
 outputmovies = args.outputmovies
 graphonly = args.graphonly
-xyhm = args.xyhm
 social = args.social
 graphmulti = args.dirlist
 graphparameters = args.graphparameters
@@ -128,15 +125,6 @@ def load_rois(roi_dict):
 		miny = int(line.split(' ')[1])
 		maxx = int(line.split(' ')[2])
 		maxy = int(line.split(' ')[3])
-		if social:
-			#print("ROIS BEFORE ", minx, miny, maxx, maxy)
-			if minx < 400: # could make this the halfway point of the image or something, but just going with a value I'm sure will work is ok until the code needs to be more flexible.
-				maxx = maxx - (0.13 * (maxx - minx))
-				#minx = minx + (0.01 * (maxx - minx)) # Also trimming on this side to avoid calls of the fish in the acrylic window in some cases
-			else:
-				minx = minx + (0.13 * (maxx - minx))
-				#maxx = maxx - (0.01 * (maxx - minx))
-			#print("ROIS AFTER ", minx, miny, maxx, maxy)
 		roi_dict[i] = [minx, miny, maxx, maxy]
 		i += 1
 
@@ -383,10 +371,6 @@ def convert_to_polar(cen_data_array):
 		(rhodata[:,i], thetadata[:,i]) = cart2pol(zerodcoords[:,2*i], zerodcoords[:,2*i+1])
 		xzerod[:,i] = zerodcoords[:,2*i]
 		yzerod[:,i] = zerodcoords[:,2*i+1]
-		if social:
-		# RETURNING X/Y NOT ZEROED!!
-			xzerod[:,i] = cen_data_array[:,2*i]
-			yzerod[:,i] = cen_data_array[:,2*i+1]
 	return (rhodata, thetadata, xzerod, yzerod)
 
 
@@ -436,50 +420,11 @@ def generate_fish_objects(dp_data_array, rho_array, theta_array, x_array, y_arra
 		for x in genotype_list.keys():
 			if n in genotype_list[x]:
 				# Adding 1 back onto the fish.idnumber, because all we use it for later is to connect to original input and we want it to match
-				if social:
-					#print("BEFORE ",np.amax(x_array[:,n]), " ", np.amin(x_array[:,n]))
-					lower_bound = rois_dict[n+1][0]
-					upper_bound = rois_dict[n+1][2]
-					roimask = (x_array[:, n] < lower_bound) | (x_array[:, n] > upper_bound)
-					#roimask = ((x_array[:,n] < rois_dict[n+1][0]) | (x_array[:,n] > rois_dict[n+1][2]))
-					#print(x_array[:,n])
-					x_array[:,n][roimask] = np.nan
-					#print(roimask)
-					#print(x_array[:,n])
-					#print("AFTER ",np.nanmax(x_array[:,n]), " ", np.nanmin(x_array[:,n]))
-					#print(x_array[:,n])
-					if rois_dict[n+1][0] < 400:
-						x_array[:,n] = x_array[:,n] - np.nanmax(x_array[:,n])
-						x_array[:,n] = abs(-1 * x_array[:,n])
-					else:
-						x_array[:,n] = x_array[:,n] - abs(np.nanmin(x_array[:,n]))
-					#print(x_array[:,n])
-					#print("EARLYMAXMIN",np.nanmin(x_array[:,n]), np.nanmax(x_array[:,n]))
-					#print("EARLY ROIS ", rois_dict[n+1])
 				newfish = Fish(n + 1, x.split('_')[0], x.split('_')[1], dp_data_array[:,n], rho_array[:,n], theta_array[:,n], x_array[:,n], y_array[:,n], split_hs_dpix, split_hs_pos_x, split_hs_pos_y)
-				if xyhm:
-					nan_mask = np.logical_not(np.isnan(x_array[:,n]))
-					heatmap, xedges, yedges = np.histogram2d(x_array[:,n][nan_mask], y_array[:,n][nan_mask], bins=(35,5))
-					extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-					fig, ax1 = plt.subplots()
-					im = ax1.imshow(heatmap.T, interpolation='lanczos', cmap='jet')
-					#im = ax1.pcolormesh(xedges,yedges,heatmap.T,cmap='jet',shading='auto')
-					plt.savefig("fish_" + str(n+1) + "_XYheatmap.png",transparent=True, format ="png")
-					plt.close()
 				if(roisfile or longmovie):
 				#	print(rois_dict[n+1])
-					#print("EARLY ROIS b", rois_dict[n+1])
-					if social:
-						rois_dict[n+1][2] = rois_dict[n+1][2] - rois_dict[n+1][0]
-						rois_dict[n+1][0] = 0
-						#print("EARLY ROIS c", rois_dict[n+1])
-						newfish.add_rois(rois_dict[n+1])
-					else:
-						newfish.add_rois(rois_dict[n+1])
+					newfish.add_rois(rois_dict[n+1])
 				fish_list.append(newfish)
-	#if xyhm:
-	#	print("Done with making xy heatmaps. Exiting without further analysis.")
-	#	exit()
 	return fish_list
 
 

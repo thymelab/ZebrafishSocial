@@ -55,7 +55,7 @@ for name in directory_names:
 numberlist = list(set(numberlist))
 for n in numberlist:
 	gfile = open("genotyping", 'w')
-	for file in glob.glob('*matrix*'):
+	for file in glob.glob('*matrix'):
 		f = open(file, 'r')
 		line1 = f.readline()
 		lines = f.readlines()

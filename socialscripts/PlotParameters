@@ -29,6 +29,7 @@ _numberofbouts_: Number of bouts
 _numberofboutssocial_: Number of bouts with >79% of bout in 25% zone
 _numberofboutsasocial_: Number of bouts with >79% of bout in 25% control zone
 _socialpreference_: Bouts in social zone - bouts in asocial zone / total bouts
+_socialpreferenceframes_: Time in social zone - time in asocial zone / total time
 _numberofboutsSLEEP_: Number of sleep bouts
 _fracconsistentinitdirectionheadingangle_: Average fraction consistent initial turn direction
 _wakingactive_: Waking activity
